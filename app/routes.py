@@ -25,11 +25,21 @@ def health_check():
         "mesaj": "ECNA ARC Mimarlık Yapay Zekâ Servisi Çalışıyor"
     }), 200
 
-@api_bp.route('/sohbet', methods=['POST'])
-def sohbet():
-    veri = request.get_json()
-    if not veri or 'mesaj' not in veri:
-        return jsonify({"basari": False, "hata": "Mesaj alanı zorunludur."}), 400
+@@api_bp.route('/chat', methods=['POST'])
+def chat():
+    data = request.get_json() or {}
+    user_message = data.get('message') or data.get('prompt') or ""
+
+    if not user_message:
+        return jsonify({"response": "Lütfen bir mesaj yazın.", "reply": "Lütfen bir mesaj yazın."}), 400
+
+    reply = ai_service(user_message)
+    
+    return jsonify({
+        "response": reply,
+        "reply": reply,
+        "status": "success"
+    })
 
     try:
         yanit = ai_service.yanit_uret(veri['mesaj'])
