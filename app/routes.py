@@ -27,26 +27,44 @@ def health_check():
 
 @api_bp.route('/chat', methods=['POST'])
 def chat():
-    data = request.get_json() or {}
-    user_message = data.get('message') or data.get('prompt') or ""
-
-    if not user_message:
-        return jsonify({"response": "Lütfen bir mesaj yazın.", "reply": "Lütfen bir mesaj yazın."}), 400
-
-    reply = ai_service(user_message)
-    
-    return jsonify({
-        "response": reply,
-        "reply": reply,
-        "status": "success"
-    })
-
     try:
-        yanit = ai_service.yanit_uret(veri['mesaj'])
-        return jsonify({"basari": True, "cevap": yanit}), 200
-    except Exception as e:
-        return jsonify({"basari": False, "hata": str(e)}), 500
+        data = request.get_json(silent=True) or {}
 
+        user_message = (
+            data.get("message")
+            or data.get("prompt")
+            or data.get("mesaj")
+            or ""
+        ).strip()
+
+        if not user_message:
+            return jsonify({
+                "status": "error",
+                "response": "Lütfen bir mesaj yazın.",
+                "reply": "Lütfen bir mesaj yazın.",
+                "basari": False
+            }), 400
+
+        reply = ai_service(user_message)
+
+        return jsonify({
+            "status": "success",
+            "response": reply,
+            "reply": reply,
+            "basari": True,
+            "cevap": reply
+        }), 200
+
+    except Exception as e:
+        print(f"/api/chat HATASI: {type(e).__name__}: {e}")
+
+        return jsonify({
+            "status": "error",
+            "response": "Yapay zeka servisine şu anda ulaşılamıyor.",
+            "reply": "Yapay zeka servisine şu anda ulaşılamıyor.",
+            "basari": False,
+            "hata": str(e)
+        }), 500
 @api_bp.route('/leads', methods=['POST'])
 def create_lead():
     veri = request.get_json()

@@ -84,7 +84,8 @@
             input.value = '';
             chatBox.scrollTop = chatBox.scrollHeight;
 
-            const res = await fetch('/api/sohbet', {
+            // ADRES DÜZELTİLDİ: /api/sohbet yerine /api/chat yapıldı
+            const res = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ mesaj: mesaj })
@@ -93,7 +94,7 @@
             if(data.basari) {
                 chatBox.innerHTML += `<div class="ai-msg">${data.cevap}</div>`;
             } else {
-                chatBox.innerHTML += `<div class="ai-msg text-danger">Hata oluştu.</div>`;
+                chatBox.innerHTML += `<div class="ai-msg text-danger">${data.response || 'Hata oluştu.'}</div>`;
             }
             chatBox.scrollTop = chatBox.scrollHeight;
         }
@@ -123,6 +124,4 @@
                 sonucDiv.innerHTML = `<div class="alert alert-danger">Bir hata oluştu.</div>`;
             }
         }
-    </script>
-</body>
-</html>
+</script>
