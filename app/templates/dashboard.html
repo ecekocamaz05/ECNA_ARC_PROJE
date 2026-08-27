@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECNA ARC - Yönetim Paneli</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f6f9; color: #333; }
+        h1 { color: #111; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #222; color: #fff; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .refresh-btn { padding: 10px 15px; background-color: #222; color: white; border: none; cursor: pointer; border-radius: 4px; }
+        .refresh-btn:hover { background-color: #444; }
+    </style>
+</head>
+<body>
+
+    <h1>ECNA ARC Lead Yönetim Paneli</h1>
+    <button class="refresh-btn" onclick="leadleriGetir()">Yenile</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>İsim</th>
+                <th>Telefon</th>
+                <th>Proje Tipi</th>
+                <th>Mesaj</th>
+                <th>Tarih</th>
+            </tr>
+        </thead>
+        <tbody id="leadTableBody">
+            <tr><td colspan="6">Yükleniyor...</td></tr>
+        </tbody>
+    </table>
+
+    <script>
+        async function leadleriGetir() {
+            try {
+                const response = await fetch('/api/leads');
+                const data = await response.json();
+                const tbody = document.getElementById('leadTableBody');
+                tbody.innerHTML = '';
+
+                if (data.basari && data.data.length > 0) {
+                    data.data.forEach(lead => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${lead.id}</td>
+                            <td>${lead.isim}</td>
+                            <td>${lead.telefon}</td>
+                            <td>${lead.proje_tipi}</td>
+                            <td>${lead.mesaj}</td>
+                            <td>${lead.tarih}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                } else {
+                    tbody.innerHTML = '<tr><td colspan="6">Henüz kayıtlı bir talep bulunmuyor.</td></tr>';
+                }
+            } catch (error) {
+                console.error('Hata:', error);
+                document.getElementById('leadTableBody').innerHTML = '<tr><td colspan="6" style="color:red;">Veriler çekilirken hata oluştu.</td></tr>';
+            }
+        }
+
+        window.onload = leadleriGetir;
+    </script>
+</body>
+</html>
