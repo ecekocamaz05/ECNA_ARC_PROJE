@@ -1,9 +1,7 @@
 import os
 from groq import Groq
 
-
 def ai_service(user_message):
-
     api_key = os.environ.get("GROQ_API_KEY")
 
     if not api_key:
