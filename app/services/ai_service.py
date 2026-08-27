@@ -1,10 +1,9 @@
 import os
 from groq import Groq
 
-def generate_ai_response(user_message):
+def ai_service(user_message):
     api_key = os.environ.get('GROQ_API_KEY')
     
-    # API anahtarı yoksa veya demo ise varsayılan mesaja düşer
     if not api_key or api_key == 'gsk_demo_key':
         return f"Proje talebiniz alındı: {user_message}"
 
