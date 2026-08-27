@@ -25,7 +25,7 @@ def health_check():
         "mesaj": "ECNA ARC Mimarlık Yapay Zekâ Servisi Çalışıyor"
     }), 200
 
-@@api_bp.route('/chat', methods=['POST'])
+@api_bp.route('/chat', methods=['POST'])
 def chat():
     data = request.get_json() or {}
     user_message = data.get('message') or data.get('prompt') or ""
