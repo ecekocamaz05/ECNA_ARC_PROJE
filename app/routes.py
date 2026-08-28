@@ -45,7 +45,7 @@ def chat():
                 "basari": False
             }), 400
 
-        reply = ai_service(user_message)
+        reply = ai_service.yanit_uret(user_message)
 
         return jsonify({
             "status": "success",

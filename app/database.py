@@ -5,7 +5,7 @@ db = SQLAlchemy()
 
 class Lead(db.Model):
     __tablename__ = 'leads'
-    
+
     id = db.Column(db.Integer, primary_key=True)
     isim = db.Column(db.String(100), nullable=False)
     telefon = db.Column(db.String(20), nullable=False)
