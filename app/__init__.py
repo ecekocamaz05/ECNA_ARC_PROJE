@@ -3,7 +3,7 @@ import os
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import config_secenekleri
-from app.database import db, init_db
+from app.database import init_db
 
 def create_app(config_class=None):
     app = Flask(__name__)

@@ -8,9 +8,12 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'ecna-arc-gizli-anahtar-2026'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        'sqlite:///' + os.path.join(BASE_DIR, 'leads.db')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # SQLite veritabani dosyasinin yolu. Ortam degiskeni "sqlite:///..." bicimiyle
+    # verilirse bu onek temizlenir; database.py duz bir dosya yolu bekler.
+    DATABASE_URL = (os.environ.get('DATABASE_URL')
+                    or os.path.join(BASE_DIR, 'leads.db')).replace('sqlite:///', '')
+
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY') or 'gsk_demo_key'
     AI_PROVIDER = os.environ.get('AI_PROVIDER') or 'groq'
     CORS_ORIGINS = os.environ.get('CORS_ORIGINS') or '*'

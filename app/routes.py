@@ -1,6 +1,9 @@
 from flask import Blueprint, render_template, request, jsonify, current_app
-from app.database import db, Lead
+from app.database import lead_ekle, tum_leadler
 from app.services.ai_service import ai_service, AIServiceError
+
+# Yonerge - Modul D: bu dosyada SQL ve AI kodu YOKTUR.
+# Sadece gelen istek dogrulanir ve ilgili katmanin fonksiyonu cagrilir.
 
 web_bp = Blueprint('web', __name__)
 api_bp = Blueprint('api', __name__)
@@ -84,26 +87,25 @@ def create_lead():
         return jsonify({"basari": False, "hata": "İsim ve telefon alanları zorunludur."}), 400
 
     try:
-        yeni_lead = Lead(
-            isim=veri['isim'],
-            telefon=veri['telefon'],
-            mesaj=veri.get('mesaj', ''),
-            proje_tipi=veri.get('proje_tipi', 'Genel')
+        # SQL burada degil, database.py icinde. Bu katman sadece cagirir.
+        yeni_id = lead_ekle(
+            veri['isim'],
+            veri['telefon'],
+            veri.get('mesaj', ''),
+            veri.get('proje_tipi', 'Genel')
         )
-        db.session.add(yeni_lead)
-        db.session.commit()
-        return jsonify({"basari": True, "lead_id": yeni_lead.id, "mesaj": "Talebiniz başarıyla alındı."}), 201
+        return jsonify({"basari": True, "lead_id": yeni_id, "mesaj": "Talebiniz başarıyla alındı."}), 201
     except Exception as e:
-        db.session.rollback()
-        return jsonify({"basari": False, "hata": str(e)}), 500
+        current_app.logger.exception("/api/leads POST hatasi: %s", type(e).__name__)
+        return jsonify({"basari": False, "hata": "Kayit sirasinda bir hata olustu."}), 500
 
 @api_bp.route('/leads', methods=['GET'])
 def get_leads():
     try:
-        leads = Lead.query.order_by(Lead.tarih.desc()).all()
         return jsonify({
             "basari": True,
-            "data": [lead.to_dict() for lead in leads]
+            "data": tum_leadler()
         }), 200
     except Exception as e:
-        return jsonify({"basari": False, "hata": str(e)}), 500
+        current_app.logger.exception("/api/leads GET hatasi: %s", type(e).__name__)
+        return jsonify({"basari": False, "hata": "Kayitlar okunamadi."}), 500
