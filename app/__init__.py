@@ -24,12 +24,18 @@ def create_app(config_class=None):
     app.register_blueprint(web_bp)
     app.register_blueprint(api_bp, url_prefix='/api')
 
-    # Yonergedeki sunucu canlilik kontrolu (Render icin de kullanilir)
+    # Yonergedeki sunucu canlilik kontrolu (Render icin de kullanilir).
+    # Anahtarin KENDISI degil, sadece "tanimli mi" bilgisi doner; boylece
+    # canli sunucuda eksik ayar, sir sizdirmadan uzaktan teshis edilebilir.
     @app.route('/health')
     def health():
+        from app.services.ai_service import ai_service
         return jsonify({
             "durum": "aktif",
-            "mesaj": "ECNA ARC Mimarlık Yapay Zekâ Servisi Çalışıyor"
+            "mesaj": "ECNA ARC Mimarlık Yapay Zekâ Servisi Çalışıyor",
+            "ai_anahtari_tanimli": ai_service.anahtar_tanimli(),
+            "model": app.config.get('GROQ_MODEL'),
+            "ortam": os.environ.get('FLASK_ENV', 'default')
         }), 200
 
     return app
