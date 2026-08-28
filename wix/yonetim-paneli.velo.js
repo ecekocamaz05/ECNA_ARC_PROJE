@@ -10,7 +10,7 @@
    SAYFADA BULUNMASI GEREKEN ELEMAN ID'LERI:
      #leadRepeater   -> Repeater (tekrarlayici)
        Repeater'in ICINDE (her satirda):
-         #textIsim       -> Text
+         #textAd         -> Text   (musteri adi)
          #textTelefon    -> Text
          #textProjeTipi  -> Text
          #textMesaj      -> Text
@@ -19,6 +19,12 @@
      #btnYenile      -> Button (opsiyonel, "Yenile")
 
    ID'ler birebir ayni olmali. Bir harf farki baglantiyi koparir.
+
+   NEDEN "textAd", "textIsim" DEGIL?
+   Turkce klavyede Shift+i, İ (noktali buyuk I) uretir; bu, JavaScript'in
+   bekledigi I (noktasiz buyuk I) harfinden FARKLI bir karakterdir. Ekranda
+   neredeyse ayni gorunur ama kod elemani bulamaz ve teshisi cok zordur.
+   Bu tuzaga hic girmemek icin buyuk I harfi iceren ID kullanilmiyor.
    ===================================================================== */
 
 import { fetch } from 'wix-fetch';
@@ -31,7 +37,7 @@ $w.onReady(function () {
     // Repeater'in her satiri hazir oldugunda calisir.
     // $item = o satirin kapsami, itemData = o satirin verisi.
     $w('#leadRepeater').onItemReady(($item, itemData) => {
-        $item('#textIsim').text      = itemData.isim      || '-';
+        $item('#textAd').text      = itemData.isim      || '-';
         $item('#textTelefon').text   = itemData.telefon   || '-';
         $item('#textProjeTipi').text = itemData.projeTipi || 'Genel';
         $item('#textMesaj').text     = itemData.mesajKisa || '-';
