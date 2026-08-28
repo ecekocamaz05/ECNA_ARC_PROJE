@@ -1,0 +1,57 @@
+<!--
+  ECNA ARC - YONETIM PANELI (KOLAY YOL / Plan B)
+
+  Bu dosya, Render'da ZATEN CALISAN /dashboard sayfasini Wix'in icine
+  gomer. Repeater, eleman ID'si, Velo kodu GEREKMEZ.
+
+  NEREYE YAPISTIRILIR?
+  Wix Editor > Ekle > Katistir (Embed) > HTML iframe > "Kodu Girin"
+  alanina bu dosyanin TAMAMI yapistirilir.
+  Sonra bileseni fareyle buyutun (en az 700 x 600 piksel olsun).
+
+  NOT: Bu yol hizli calisir ama yonergenin Modul G / Arayuz 2 maddesi
+  "Repeater bileseni ile gosterin" diyor. Tam puan icin Repeater'li
+  surumu (yonetim-paneli.velo.js) kullanin. Bu dosya yedek plandir.
+-->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+  #sarmal { display: flex; flex-direction: column; height: 100vh; min-height: 500px; background: #f4f6f9; }
+  #bilgi { padding: 8px 12px; font-size: 13px; color: #475569; background: #fff;
+           border-bottom: 1px solid #e2e8f0; }
+  #cerceve { flex: 1; width: 100%; border: 0; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+
+<div id="sarmal">
+  <div id="bilgi">
+    Kayıtlar yükleniyor… Sunucu uykudaysa ilk açılış 50 saniye sürebilir.
+    Görünmezse <a href="https://ecna-arc-smartlead.onrender.com/dashboard" target="_blank" rel="noopener">paneli yeni sekmede açın</a>.
+  </div>
+
+  <!-- Render'daki hazir yonetim paneli. Icerideki sayfa kendi origin'inde
+       calistigi icin /api/leads isteklerini sorunsuz yapar. -->
+  <iframe id="cerceve"
+          src="https://ecna-arc-smartlead.onrender.com/dashboard"
+          title="ECNA ARC Yönetim Paneli"
+          loading="eager"></iframe>
+</div>
+
+<script>
+  // Panel yuklenince ustteki bilgi seridini sadelestir
+  document.getElementById("cerceve").addEventListener("load", function () {
+    document.getElementById("bilgi").innerHTML =
+      'ECNA ARC · Talep Yönetim Paneli — ' +
+      '<a href="https://ecna-arc-smartlead.onrender.com/dashboard" target="_blank" rel="noopener">yeni sekmede aç</a>';
+  });
+</script>
+
+</body>
+</html>
