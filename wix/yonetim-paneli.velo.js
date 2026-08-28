@@ -38,9 +38,12 @@ $w.onReady(function () {
         $item('#textTarih').text     = itemData.tarihGosterim || '-';
     });
 
-    // "Yenile" butonu sayfada varsa bagla (yoksa hata vermesin)
-    if ($w('#btnYenile').id) {
+    // "Yenile" butonu sayfada varsa bagla. Eleman yoksa Velo hata firlatir;
+    // bu yuzden try-catch ile sariliyor ki liste yine de yuklensin.
+    try {
         $w('#btnYenile').onClick(() => leadleriGetir());
+    } catch (e) {
+        console.log('#btnYenile sayfada yok, atlandi.');
     }
 
     leadleriGetir();
@@ -116,9 +119,13 @@ function tarihBicimle(ham) {
     return g[2] + '.' + g[1] + '.' + g[0] + saat;
 }
 
-// #textDurum sayfada yoksa sessizce gec
+// #textDurum sayfada yoksa sessizce gec; durum mesaji her halukarda
+// konsola yazilir ki tarayici konsolundan teshis yapilabilsin.
 function durumYaz(mesaj) {
-    if ($w('#textDurum').id) {
+    console.log('[Yonetim Paneli]', mesaj);
+    try {
         $w('#textDurum').text = mesaj;
+    } catch (e) {
+        // #textDurum eklenmemis - sorun degil
     }
 }
