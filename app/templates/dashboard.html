@@ -47,14 +47,16 @@
                 if (data.basari && data.data.length > 0) {
                     data.data.forEach(lead => {
                         const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${lead.id}</td>
-                            <td>${lead.isim}</td>
-                            <td>${lead.telefon}</td>
-                            <td>${lead.proje_tipi}</td>
-                            <td>${lead.mesaj}</td>
-                            <td>${lead.tarih}</td>
-                        `;
+                        // GUVENLIK: lead verisi ziyaretcinin yazdigi metindir.
+                        // innerHTML ile basilirsa forma <img onerror=...> yazan biri
+                        // paneli acan yoneticinin tarayicisinda kod calistirabilir
+                        // (stored XSS). Bu yuzden textContent kullaniliyor.
+                        [lead.id, lead.isim, lead.telefon,
+                         lead.proje_tipi, lead.mesaj, lead.tarih].forEach(deger => {
+                            const td = document.createElement('td');
+                            td.textContent = (deger === null || deger === undefined) ? '' : deger;
+                            tr.appendChild(td);
+                        });
                         tbody.appendChild(tr);
                     });
                 } else {
