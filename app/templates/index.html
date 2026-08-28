@@ -80,23 +80,38 @@
             const mesaj = input.value.trim();
             if(!mesaj) return;
 
-            chatBox.innerHTML += `<div class="user-msg">${mesaj}</div>`;
+            // textContent kullaniliyor: kullanici metni HTML olarak yorumlanmasin (XSS)
+            baloncukEkle(chatBox, 'user-msg', mesaj);
             input.value = '';
-            chatBox.scrollTop = chatBox.scrollHeight;
 
-            // ADRES DÜZELTİLDİ: /api/sohbet yerine /api/chat yapıldı
-            const res = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ mesaj: mesaj })
-            });
-            const data = await res.json();
-            if(data.basari) {
-                chatBox.innerHTML += `<div class="ai-msg">${data.cevap}</div>`;
-            } else {
-                chatBox.innerHTML += `<div class="ai-msg text-danger">${data.response || 'Hata oluştu.'}</div>`;
+            const bekleyen = baloncukEkle(chatBox, 'ai-msg', 'Yazıyor...');
+
+            try {
+                const res = await fetch('/api/sohbet', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ mesaj: mesaj })
+                });
+                const data = await res.json();
+
+                bekleyen.textContent = data.cevap || 'Hata oluştu.';
+                if(!data.basari) bekleyen.classList.add('text-danger');
+            } catch (err) {
+                // Ag hatasi / sunucuya ulasilamiyor: kullanici sonsuza kadar beklemesin
+                console.error('Sohbet hatasi:', err);
+                bekleyen.textContent = 'Sunucuya ulaşılamadı. Lütfen tekrar deneyin.';
+                bekleyen.classList.add('text-danger');
             }
             chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function baloncukEkle(chatBox, sinif, metin) {
+            const div = document.createElement('div');
+            div.className = sinif;
+            div.textContent = metin;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return div;
         }
 
         async function formGonder() {
@@ -111,17 +126,24 @@
                 return;
             }
 
-            const res = await fetch('/api/leads', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ isim, telefon, proje_tipi, mesaj })
-            });
-            const data = await res.json();
-            if(data.basari) {
-                sonucDiv.innerHTML = `<div class="alert alert-success">Talebiniz başarıyla iletildi!</div>`;
-                document.getElementById('leadForm').reset();
-            } else {
-                sonucDiv.innerHTML = `<div class="alert alert-danger">Bir hata oluştu.</div>`;
+            try {
+                const res = await fetch('/api/leads', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ isim, telefon, proje_tipi, mesaj })
+                });
+                const data = await res.json();
+                if(data.basari) {
+                    sonucDiv.innerHTML = `<div class="alert alert-success">Talebiniz başarıyla iletildi!</div>`;
+                    document.getElementById('leadForm').reset();
+                } else {
+                    sonucDiv.innerHTML = `<div class="alert alert-danger">Bir hata oluştu.</div>`;
+                }
+            } catch (err) {
+                console.error('Form hatasi:', err);
+                sonucDiv.innerHTML = `<div class="alert alert-danger">Sunucuya ulaşılamadı.</div>`;
             }
         }
 </script>
+</body>
+</html>

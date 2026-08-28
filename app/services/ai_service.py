@@ -1,5 +1,12 @@
+import logging
+
 import requests
-from flask import current_app
+
+from config import Config
+
+# Bu dosya Flask'i BILMEZ (yonerge - Modul C): ayarlari dogrudan config
+# katmanindan, hata kaydini standart logging ile alir.
+logger = logging.getLogger(__name__)
 
 
 class AIServiceError(Exception):
@@ -10,15 +17,18 @@ class AIServiceError(Exception):
 class AIService:
 
     GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-    MODEL = "openai/gpt-oss-20b"
+
+    def _model_al(self):
+        """Kullanilacak Groq modelini config'den okur."""
+        return Config.GROQ_MODEL
 
     def _sistem_talimati_al(self):
         """config.py'deki BUSINESS_CONTEXT metnini okur."""
-        return current_app.config.get('BUSINESS_CONTEXT', 'Sen yardımcı bir asistansın.')
+        return Config.BUSINESS_CONTEXT
 
     def yanit_uret(self, mesaj, gecmis=None):
         """Kullanıcı mesajını Groq API'sine gönderir ve yanıtı döndürür."""
-        api_key = current_app.config.get('GROQ_API_KEY')
+        api_key = Config.GROQ_API_KEY
 
         # Anahtar yoksa veya demo anahtarsa, çökmek yerine demo mesajı dön
         if not api_key or api_key == 'gsk_demo_key':
@@ -36,21 +46,41 @@ class AIService:
             "Content-Type": "application/json"
         }
         payload = {
-            "model": self.MODEL,
+            "model": self._model_al(),
             "messages": mesajlar,
             "temperature": 0.7,
-            "max_tokens": 300
+            # Bu model yanit uretmeden once "reasoning" token harciyor; limit
+            # dusuk olursa cevap cumle ortasinda kesiliyor (finish_reason=length)
+            "max_tokens": 1024
         }
 
         try:
-            response = requests.post(self.GROQ_URL, headers=headers, json=payload, timeout=15)
+            response = requests.post(self.GROQ_URL, headers=headers, json=payload, timeout=30)
             response.raise_for_status()
             data = response.json()
-            return data["choices"][0]["message"]["content"]
+            cevap = (data["choices"][0]["message"].get("content") or "").strip()
+
+            if not cevap:
+                raise AIServiceError("Yapay zekâdan boş yanıt geldi, lütfen tekrar deneyin.")
+
+            return cevap
+
+        except requests.exceptions.HTTPError as e:
+            # 404 = model kullanimdan kaldirilmis, 401 = gecersiz anahtar,
+            # 429 = kota asimi. Gercek sebebi loglara yaz ki teshis edilebilsin.
+            kod = e.response.status_code if e.response is not None else '?'
+            govde = e.response.text[:300] if e.response is not None else ''
+            logger.error("Groq API HTTP hatasi %s: %s", kod, govde)
+            raise AIServiceError("Yapay zekâ servisine şu anda ulaşılamıyor.")
 
         except requests.exceptions.RequestException as e:
-            print(f"Groq API HATASI: {type(e).__name__}: {e}")
+            logger.error("Groq API baglanti hatasi: %s: %s", type(e).__name__, e)
             raise AIServiceError("Yapay zekâ servisine şu anda ulaşılamıyor.")
+
+        except (KeyError, IndexError, ValueError) as e:
+            # Groq beklenmedik bir govde dondurduyse burada yakalanir
+            logger.error("Groq yanit ayristirma hatasi: %s: %s", type(e).__name__, e)
+            raise AIServiceError("Yapay zekâ yanıtı okunamadı.")
 
 
 # Dosya sonunda tek bir örnek — routes.py bunu doğrudan import edip kullanacak
