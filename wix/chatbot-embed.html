@@ -1,10 +1,17 @@
 <!--
-  ECNA ARC - Wix'e gomulecek chatbot bileseni.
+  ECNA ARC - Wix'e gomulecek KARSILAMA ARAYUZU (Yonerge Modul G / Arayuz 1)
+
+  Iki parca tek bilesende:
+    1) Yapay zeka sohbeti      -> POST /api/sohbet
+    2) Talep (lead) formu      -> POST /api/leads
+  Form olmadan yonetim paneline hicbir zaman veri dusmez; yonerge her iki
+  ucu da bu arayuzden istiyor.
 
   Wix Editor > Ekle > Katistir (Embed) > HTML iframe > "Kodu Girin"
-  alanina bu dosyanin TAMAMI yapistirilir.
+  alanina bu dosyanin TAMAMI yapistirilir. Bilesen en az 900 x 640 piksel
+  olmali, yoksa form alt tarafta kirpilir.
 
-  KRITIK: Asagidaki API_ADRESI mutlak (absolute) olmalidir. Wix icinde
+  KRITIK: Asagidaki adresler mutlak (absolute) olmalidir. Wix icinde
   "/api/sohbet" gibi goreli bir adres kullanilirsa istek Render'a degil
   Wix alan adina gider ve 404 doner - chatbot bu yuzden calismaz.
 -->
@@ -15,11 +22,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; background: #f8fafc; }
-  #kutu { display: flex; flex-direction: column; height: 100vh; min-height: 420px; background: #fff;
+  body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+         background: #f8fafc; color: #0f172a; }
+
+  /* Z-Pattern (yonerge): sohbet solda-genis, form gozun indigi sag/alt bolgede */
+  #sarmal { display: flex; gap: 14px; padding: 12px; height: 100vh; min-height: 560px; }
+  #sohbetSutun { flex: 1 1 58%; display: flex; }
+  #formSutun   { flex: 1 1 42%; display: flex; }
+
+  /* Dar ekranda (mobil) alt alta insin */
+  @media (max-width: 760px) {
+    #sarmal { flex-direction: column; height: auto; }
+    #kutu { min-height: 380px; }
+  }
+
+  .kart { display: flex; flex-direction: column; width: 100%; background: #fff;
           border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
-  #baslik { background: #1e293b; color: #fff; padding: 14px 16px; font-size: 15px; font-weight: 600; }
-  #mesajlar { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .kartBaslik { background: #1e293b; color: #fff; padding: 14px 16px;
+                font-size: 15px; font-weight: 600; }
+
+  /* --- Sohbet --- */
+  #mesajlar { flex: 1; overflow-y: auto; padding: 16px; display: flex;
+              flex-direction: column; gap: 10px; }
   .balon { max-width: 80%; padding: 10px 14px; border-radius: 14px; line-height: 1.45;
            font-size: 14px; white-space: pre-wrap; word-wrap: break-word; }
   .kullanici { align-self: flex-end; background: #2563eb; color: #fff; border-bottom-right-radius: 4px; }
@@ -32,22 +56,95 @@
   #gonder { padding: 11px 22px; border: 0; border-radius: 22px; background: #2563eb; color: #fff;
             font-size: 14px; font-weight: 600; cursor: pointer; }
   #gonder:disabled { background: #94a3b8; cursor: not-allowed; }
+
+  /* --- Talep formu --- */
+  #formGovde { flex: 1; overflow-y: auto; padding: 16px; }
+  .alan { margin-bottom: 12px; }
+  .alan label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: #334155; }
+  .alan input, .alan select, .alan textarea {
+      width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+      font-size: 14px; font-family: inherit; outline: none; background: #fff; color: #0f172a; }
+  .alan input:focus, .alan select:focus, .alan textarea:focus { border-color: #2563eb; }
+  .alan textarea { resize: vertical; min-height: 62px; }
+  #kaydet { width: 100%; padding: 12px; border: 0; border-radius: 8px; background: #16a34a;
+            color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+  #kaydet:hover { background: #15803d; }
+  #kaydet:disabled { background: #94a3b8; cursor: not-allowed; }
+  #formSonuc { margin-top: 12px; padding: 11px 13px; border-radius: 8px; font-size: 14px;
+               line-height: 1.4; display: none; }
+  #formSonuc.basarili { display: block; background: #dcfce7; color: #166534; }
+  #formSonuc.basarisiz { display: block; background: #fee2e2; color: #991b1b; }
+  .kvkk { margin-top: 10px; font-size: 11px; color: #64748b; line-height: 1.5; }
 </style>
 </head>
 <body>
 
-<div id="kutu">
-  <div id="baslik">ECNA ARC · Yapay Zekâ Asistanı</div>
-  <div id="mesajlar"></div>
-  <div id="alt">
-    <input id="girdi" type="text" placeholder="Mesajınızı yazın..." autocomplete="off">
-    <button id="gonder">Gönder</button>
+<div id="sarmal">
+
+  <!-- ============ 1) YAPAY ZEKA SOHBETI ============ -->
+  <div id="sohbetSutun">
+    <div class="kart" id="kutu">
+      <div class="kartBaslik">ECNA ARC · Yapay Zekâ Asistanı</div>
+      <div id="mesajlar"></div>
+      <div id="alt">
+        <input id="girdi" type="text" placeholder="Mesajınızı yazın..." autocomplete="off">
+        <button id="gonder">Gönder</button>
+      </div>
+    </div>
   </div>
+
+  <!-- ============ 2) TALEP (LEAD) FORMU ============ -->
+  <div id="formSutun">
+    <div class="kart">
+      <div class="kartBaslik">Randevu &amp; Proje Teklifi Alın</div>
+      <div id="formGovde">
+
+        <div class="alan">
+          <label for="isim">Adınız Soyadınız *</label>
+          <input id="isim" type="text" autocomplete="name" placeholder="Ör. Ayşe Yılmaz">
+        </div>
+
+        <div class="alan">
+          <label for="telefon">Telefon Numaranız *</label>
+          <input id="telefon" type="tel" autocomplete="tel" placeholder="Ör. 0555 123 45 67">
+        </div>
+
+        <div class="alan">
+          <label for="projeTipi">Proje Tipi</label>
+          <select id="projeTipi">
+            <option>Konut Tasarımı</option>
+            <option>İç Mimarlık &amp; Dekorasyon</option>
+            <option>Ticari Mekan Tasarımı</option>
+            <option>Danışmanlık</option>
+          </select>
+        </div>
+
+        <div class="alan">
+          <label for="not">Not / Mesajınız</label>
+          <textarea id="not" rows="3" placeholder="Projeniz hakkında kısa bilgi..."></textarea>
+        </div>
+
+        <button id="kaydet">Talep Gönder</button>
+
+        <div id="formSonuc"></div>
+
+        <p class="kvkk">
+          Paylaştığınız iletişim bilgileri yalnızca talebinize dönüş yapmak amacıyla kullanılır.
+        </p>
+
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
-  // Render sunucunuzun MUTLAK adresi. Kendi adresiniz degisirse burayi guncelleyin.
-  const API_ADRESI = "https://ecna-arc-smartlead.onrender.com/api/sohbet";
+  // Render sunucunuzun MUTLAK adresi. Adresiniz degisirse SADECE burayi guncelleyin.
+  const SUNUCU      = "https://ecna-arc-smartlead.onrender.com";
+  const API_SOHBET  = SUNUCU + "/api/sohbet";
+  const API_LEADS   = SUNUCU + "/api/leads";
+
+  /* ==================== 1) SOHBET ==================== */
 
   const mesajlar = document.getElementById("mesajlar");
   const girdi    = document.getElementById("girdi");
@@ -78,7 +175,7 @@
     const bekleyen = balonEkle("yapayzeka", "Yazıyor...");
 
     try {
-      const cevap = await fetch(API_ADRESI, {
+      const cevap = await fetch(API_SOHBET, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ mesaj: metin, gecmis: gecmis.slice(-8) })
@@ -109,6 +206,76 @@
   girdi.addEventListener("keydown", (e) => { if (e.key === "Enter") mesajGonder(); });
 
   balonEkle("yapayzeka", "Merhaba! ECNA ARC Mimarlık asistanıyım. Projeniz hakkında ne sormak istersiniz?");
+
+
+  /* ==================== 2) TALEP FORMU ==================== */
+
+  const kaydet    = document.getElementById("kaydet");
+  const formSonuc = document.getElementById("formSonuc");
+
+  function sonucYaz(sinif, metin) {
+    formSonuc.className = sinif;
+    formSonuc.textContent = metin;   // innerHTML degil: XSS'e kapali
+  }
+
+  async function talepGonder() {
+    const isim      = document.getElementById("isim").value.trim();
+    const telefon   = document.getElementById("telefon").value.trim();
+    const projeTipi = document.getElementById("projeTipi").value;
+    const notMetni  = document.getElementById("not").value.trim();
+
+    // Backend zaten 400 donduruyor; burada da kontrol ediyoruz ki kullanici
+    // sunucuya gidip gelmeyi beklemeden aninda uyari gorsun.
+    if (!isim || !telefon) {
+      sonucYaz("basarisiz", "Lütfen isim ve telefon alanlarını doldurun.");
+      return;
+    }
+
+    kaydet.disabled = true;
+    sonucYaz("", "");
+    formSonuc.style.display = "none";
+
+    try {
+      const cevap = await fetch(API_LEADS, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        // KRITIK (yonerge - "Ayni Kelimeler"): alan adlari backend'in
+        // bekledigiyle birebir ayni olmali. database.lead_ekle() bunlari
+        // isim / telefon / mesaj / proje_tipi olarak okuyor. Bir harf farki
+        // kaydi sessizce bozar.
+        body: JSON.stringify({
+          isim:       isim,
+          telefon:    telefon,
+          mesaj:      notMetni,
+          proje_tipi: projeTipi
+        })
+      });
+
+      const veri = await cevap.json();
+
+      if (cevap.ok && veri.basari) {
+        sonucYaz("basarili", "Talebiniz alındı. En kısa sürede size dönüş yapacağız.");
+        document.getElementById("isim").value = "";
+        document.getElementById("telefon").value = "";
+        document.getElementById("not").value = "";
+      } else {
+        // Backend'in kibar hata metnini goster (yoksa genel bir mesaj)
+        sonucYaz("basarisiz", veri.hata || "Talebiniz kaydedilemedi. Lütfen tekrar deneyin.");
+      }
+    } catch (err) {
+      console.error("Lead kayit hatasi:", err);
+      sonucYaz("basarisiz", "Sunucuya ulaşılamadı. Lütfen biraz sonra tekrar deneyin.");
+    } finally {
+      kaydet.disabled = false;
+    }
+  }
+
+  kaydet.addEventListener("click", talepGonder);
+
+  // Telefon alanindayken Enter'a basmak da formu gondersin
+  document.getElementById("telefon").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") talepGonder();
+  });
 </script>
 
 </body>
