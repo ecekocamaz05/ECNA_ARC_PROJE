@@ -24,19 +24,21 @@
      #btnOneri1     -> Dugme      (hazir soru rozeti 1)
      #btnOneri2     -> Dugme      (hazir soru rozeti 2)
 
-   OPSIYONEL - TALEP FORMU (kartin altina koyarsaniz):
-     #girdiAd       -> Giris      (ad soyad)
-     #girdiTelefon  -> Giris      (telefon)
-     #btnKaydet     -> Dugme      ("Talep Gonder")
-     #textFormDurum -> Metin      (sonuc mesaji)
-
    ID'ler birebir ayni olmali. Bir harf farki baglantiyi koparir.
+
+   NOT - TALEP (LEAD) FORMU BU DOSYADA YOKTUR.
+   Ad/telefon toplama isi bilerek disari alindi. Ancak formun sitede BIR
+   YERDE olmasi gerekir: yoksa /api/leads'e hicbir kayit gitmez ve yonetim
+   paneli sonsuza kadar bos kalir. Form icin iki hazir secenek:
+     - wix/chatbot-embed.html  (HTML gomme; icinde sohbet + form birlikte)
+     - Ayri bir Velo bloguyla POST /api/leads (bu dosyanin onceki surumu:
+       git geçmişinde 43a6471 numarali commit)
 
    NEDEN HICBIR ID'DE BUYUK "I" YOK?
    Turkce klavyede Shift+i, İ (noktali buyuk I) uretir; bu, JavaScript'in
    bekledigi I (noktasiz buyuk I) harfinden FARKLI bir karakterdir. Ekranda
    neredeyse ayni gorunur ama kod elemani bulamaz ve teshisi cok zordur.
-   Bu yuzden "textIsim" degil "girdiAd" gibi adlar secildi.
+   Bu yuzden "girdiIleti" degil "girdiMesaj" gibi adlar secildi.
    ===================================================================== */
 
 import { fetch } from 'wix-fetch';
@@ -45,7 +47,6 @@ import { fetch } from 'wix-fetch';
 // o durumda istek Render'a degil Wix alan adina gider ve 404 doner.
 const SUNUCU     = 'https://ecna-arc-smartlead.onrender.com';
 const API_SOHBET = SUNUCU + '/api/sohbet';
-const API_LEADS  = SUNUCU + '/api/leads';
 
 // Wix'te bir Metin kutusunu koda otomatik kaydirtmak mumkun degil. Bu yuzden
 // secim: false = kronolojik (en yeni altta, uzun sohbette elle kaydirilir),
@@ -84,9 +85,6 @@ $w.onReady(function () {
     // boylece metni editorden degistirince kod da kendiliginden uyar.
     guvenli(() => $w('#btnOneri1').onClick(() => oneriGonder('#btnOneri1')), 'btnOneri1');
     guvenli(() => $w('#btnOneri2').onClick(() => oneriGonder('#btnOneri2')), 'btnOneri2');
-
-    // --- Talep formu (opsiyonel) ---
-    guvenli(() => $w('#btnKaydet').onClick(() => talepGonder()), 'btnKaydet');
 
     // Acilis selamlamasi
     satirEkle('ECNA ARC', 'Merhaba! ECNA ARC Mimarlık asistanıyım. Projeniz hakkında ne sormak istersiniz?');
@@ -142,56 +140,6 @@ function oneriGonder(rozetId) {
 }
 
 
-/* ==================== TALEP FORMU ==================== */
-
-async function talepGonder() {
-    const ad      = ($w('#girdiAd').value || '').trim();
-    const telefon = ($w('#girdiTelefon').value || '').trim();
-
-    // Backend zaten 400 donduruyor; burada da bakiyoruz ki kullanici
-    // sunucuya gidip gelmeyi beklemeden aninda uyari gorsun.
-    if (!ad || !telefon) {
-        formDurumYaz('Lütfen ad ve telefon alanlarını doldurun.');
-        return;
-    }
-
-    $w('#btnKaydet').disable();
-    formDurumYaz('Gönderiliyor...');
-
-    try {
-        const cevap = await fetch(API_LEADS, {
-            method: 'post',
-            headers: { 'Content-Type': 'application/json' },
-            // KRITIK (yonerge - "Ayni Kelimeler"): alan adlari backend'in
-            // bekledigiyle birebir ayni olmali. database.lead_ekle() bunlari
-            // isim / telefon / mesaj / proje_tipi olarak okuyor.
-            body: JSON.stringify({
-                isim:       ad,
-                telefon:    telefon,
-                mesaj:      'Karşılama sayfası sohbetinden bırakıldı.',
-                proje_tipi: 'Genel'
-            })
-        });
-
-        const veri = await cevap.json();
-
-        if (veri.basari) {
-            formDurumYaz('Talebiniz alındı. En kısa sürede size dönüş yapacağız.');
-            $w('#girdiAd').value = '';
-            $w('#girdiTelefon').value = '';
-        } else {
-            formDurumYaz(veri.hata || 'Talebiniz kaydedilemedi. Lütfen tekrar deneyin.');
-        }
-
-    } catch (hata) {
-        console.error('Lead kayit hatasi:', hata);
-        formDurumYaz('Sunucuya ulaşılamadı. Lütfen biraz sonra tekrar deneyin.');
-    } finally {
-        $w('#btnKaydet').enable();
-    }
-}
-
-
 /* ==================== YARDIMCILAR ==================== */
 
 // Dokume yeni bir satir ekler ve ekrani tazeler
@@ -217,11 +165,6 @@ function dokumuYaz() {
     // Yapay zekadan veya kullanicidan gelen metin HTML olarak yorumlanirsa
     // sayfaya kod enjekte edilebilir. .text ile her sey duz yazi kalir.
     $w('#textSohbet').text = sira.join('\n\n');
-}
-
-function formDurumYaz(mesaj) {
-    console.log('[Talep formu]', mesaj);
-    guvenli(() => { $w('#textFormDurum').text = mesaj; }, 'textFormDurum');
 }
 
 // Opsiyonel elemanlar sayfada yoksa $w(...) hata firlatir ve ARDINDAN GELEN
