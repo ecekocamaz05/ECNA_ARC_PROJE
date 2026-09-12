@@ -3,34 +3,38 @@
    Yonerge Modul G - Arayuz 2: Repeater + Velo + GET /api/leads
 
    NEREYE YAPISTIRILIR?
-   Wix Studio Editor > sol menu > Dev Mode (Velo) ACIK olmali.
-   Sonra "Yonetim Paneli" sayfasini acin ve alttaki kod panelinde
-   (Page Code) bu dosyanin TAMAMINI yapistirin.
+   Wix Studio Editor > Dev Mode (Velo) ACIK > "Yonetim Paneli" sayfasi >
+   alttaki kod panelinde bu dosyanin TAMAMI. Wix'in hazir ornek kodunu
+   ("// Velo API Referansi..." blogu) once silin.
 
    SAYFADA BULUNMASI GEREKEN ELEMAN ID'LERI:
      #leadRepeater   -> Repeater (tekrarlayici)
-       Repeater'in ICINDE (her satirda):
-         #textAd         -> Text   (musteri adi)
+       Repeater'in ICINDE, SADECE ILK SATIRDA (soldan saga):
+         #textAd         -> Text   (ad soyad - form zaten birlestirip gonderir)
          #textTelefon    -> Text
-         #textProjeTipi  -> Text
+         #textMail       -> Text   (e-posta)
          #textMesaj      -> Text
-         #textTarih      -> Text
-     #textDurum      -> Text  (opsiyonel, durum/hata mesaji icin)
+     #textDurum      -> Text   (opsiyonel, durum/hata mesaji)
      #btnYenile      -> Button (opsiyonel, "Yenile" - sunucudan tekrar ceker)
      #btnSirala      -> Button (opsiyonel, "Siralama" - yeni/eski yonunu cevirir)
+
+   ID'ler birebir ayni olmali. Bir harf farki baglantiyi koparir.
 
    REPEATER HAKKINDA BILINMESI GEREKEN:
    Repeater'da ID'ler SADECE ILK SATIRDAKI elemanlara verilir. Bir elemana
    ID verdiginizde diger satirlardaki karsiliklari da ayni ID'yi alir;
    bu bir hata degil, Repeater'in calisma bicimidir (tek sablon, cok satir).
 
-   ID'ler birebir ayni olmali. Bir harf farki baglantiyi koparir.
+   MAIL NEREDEN GELIYOR?
+   Veritabaninda ayri bir e-posta sutunu YOK. Iletisim formu (iletisim-
+   formu.velo.js) e-postayi mesajin ilk satirina "E-posta: ..." olarak
+   yazar; bu dosya o satiri ayirip #textMail'e, kalanini #textMesaj'a
+   basar. Iki dosyadaki EPOSTA_ONEKI sabiti AYNI olmak zorundadir.
 
    NEDEN "textAd", "textIsim" DEGIL?
    Turkce klavyede Shift+i, İ (noktali buyuk I) uretir; bu, JavaScript'in
    bekledigi I (noktasiz buyuk I) harfinden FARKLI bir karakterdir. Ekranda
    neredeyse ayni gorunur ama kod elemani bulamaz ve teshisi cok zordur.
-   Bu tuzaga hic girmemek icin buyuk I harfi iceren ID kullanilmiyor.
    ===================================================================== */
 
 import { fetch } from 'wix-fetch';
@@ -38,6 +42,9 @@ import { fetch } from 'wix-fetch';
 // Render sunucusunun MUTLAK adresi. Goreli adres ("/api/leads") KULLANMAYIN;
 // o durumda istek Render'a degil Wix alan adina gider ve 404 doner.
 const API_ADRESI = 'https://ecna-arc-smartlead.onrender.com/api/leads';
+
+// Iletisim formunun mesajin basina yazdigi onek. Formdaki ile birebir ayni.
+const EPOSTA_ONEKI = 'E-posta: ';
 
 // Siralama yonu. Backend zaten en yeniden eskiye gonderir (yonerge Modul B);
 // "Siralama" butonu bu yonu tersine cevirir. Sunucuya tekrar gitmez,
@@ -49,11 +56,10 @@ $w.onReady(function () {
     // Repeater'in her satiri hazir oldugunda calisir.
     // $item = o satirin kapsami, itemData = o satirin verisi.
     $w('#leadRepeater').onItemReady(($item, itemData) => {
-        $item('#textAd').text      = itemData.isim      || '-';
-        $item('#textTelefon').text   = itemData.telefon   || '-';
-        $item('#textProjeTipi').text = itemData.projeTipi || 'Genel';
-        $item('#textMesaj').text     = itemData.mesajKisa || '-';
-        $item('#textTarih').text     = itemData.tarihGosterim || '-';
+        $item('#textAd').text      = itemData.isim    || '-';
+        $item('#textTelefon').text = itemData.telefon || '-';
+        $item('#textMail').text    = itemData.eposta  || '-';
+        $item('#textMesaj').text   = itemData.mesaj   || '-';
     });
 
     // "Yenile" butonu sayfada varsa bagla. Eleman yoksa Velo hata firlatir;
@@ -124,14 +130,16 @@ function repeaterDoldur() {
     // KRITIK: Wix Repeater her nesnede STRING tipinde bir _id bekler.
     // Backend "id" (sayi) donduruyor; donusumu burada yapiyoruz ki
     // backend Wix'e ozel bir alan tasimak zorunda kalmasin.
-    $w('#leadRepeater').data = sira.map((k) => ({
-        _id:           String(k.id),
-        isim:          k.isim,
-        telefon:       k.telefon,
-        projeTipi:     k.proje_tipi,
-        mesajKisa:     kisalt(k.mesaj, 90),
-        tarihGosterim: tarihBicimle(k.tarih)
-    }));
+    $w('#leadRepeater').data = sira.map((k) => {
+        const parca = mesajiAyir(k.mesaj);
+        return {
+            _id:     String(k.id),
+            isim:    k.isim,
+            telefon: k.telefon,
+            eposta:  parca.eposta,
+            mesaj:   kisalt(parca.metin, 90)
+        };
+    });
 
     durumYaz(sonKayitlar.length + ' kayıt listeleniyor.');
 }
@@ -139,21 +147,26 @@ function repeaterDoldur() {
 
 /* --- Yardimci fonksiyonlar --- */
 
+// "E-posta: x@y.com\nMerhaba..." -> { eposta: "x@y.com", metin: "Merhaba..." }
+// Onek yoksa (baska kaynaktan gelen kayit) e-posta "-" olur, mesaj oldugu gibi kalir.
+function mesajiAyir(ham) {
+    if (!ham) {
+        return { eposta: '-', metin: '-' };
+    }
+    const satirlar = ham.split('\n');
+    if (satirlar[0].indexOf(EPOSTA_ONEKI) === 0) {
+        return {
+            eposta: satirlar[0].slice(EPOSTA_ONEKI.length).trim() || '-',
+            metin:  satirlar.slice(1).join('\n').trim() || '-'
+        };
+    }
+    return { eposta: '-', metin: ham };
+}
+
 // Uzun mesajlarin satiri bozmasini engeller
 function kisalt(metin, sinir) {
     if (!metin) return '-';
     return metin.length > sinir ? metin.slice(0, sinir) + '…' : metin;
-}
-
-// "2026-08-28 22:38:47" -> "28.08.2026 22:38"
-function tarihBicimle(ham) {
-    if (!ham) return '-';
-    const p = ham.split(' ');
-    const g = (p[0] || '').split('-');   // [yil, ay, gun]
-    const s = (p[1] || '').split(':');   // [saat, dakika, saniye]
-    if (g.length !== 3) return ham;
-    const saat = s.length >= 2 ? ' ' + s[0] + ':' + s[1] : '';
-    return g[2] + '.' + g[1] + '.' + g[0] + saat;
 }
 
 // #textDurum sayfada yoksa sessizce gec; durum mesaji her halukarda
