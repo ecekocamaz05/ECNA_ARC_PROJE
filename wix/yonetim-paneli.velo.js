@@ -15,8 +15,14 @@
          #textProjeTipi  -> Text
          #textMesaj      -> Text
          #textTarih      -> Text
-     #textDurum      -> Text  (durum/hata mesaji icin)
-     #btnYenile      -> Button (opsiyonel, "Yenile")
+     #textDurum      -> Text  (opsiyonel, durum/hata mesaji icin)
+     #btnYenile      -> Button (opsiyonel, "Yenile" - sunucudan tekrar ceker)
+     #btnSirala      -> Button (opsiyonel, "Siralama" - yeni/eski yonunu cevirir)
+
+   REPEATER HAKKINDA BILINMESI GEREKEN:
+   Repeater'da ID'ler SADECE ILK SATIRDAKI elemanlara verilir. Bir elemana
+   ID verdiginizde diger satirlardaki karsiliklari da ayni ID'yi alir;
+   bu bir hata degil, Repeater'in calisma bicimidir (tek sablon, cok satir).
 
    ID'ler birebir ayni olmali. Bir harf farki baglantiyi koparir.
 
@@ -32,6 +38,12 @@ import { fetch } from 'wix-fetch';
 // Render sunucusunun MUTLAK adresi. Goreli adres ("/api/leads") KULLANMAYIN;
 // o durumda istek Render'a degil Wix alan adina gider ve 404 doner.
 const API_ADRESI = 'https://ecna-arc-smartlead.onrender.com/api/leads';
+
+// Siralama yonu. Backend zaten en yeniden eskiye gonderir (yonerge Modul B);
+// "Siralama" butonu bu yonu tersine cevirir. Sunucuya tekrar gitmez,
+// son cekilen kayitlari yeniden dizer.
+let yeniUstte = true;
+let sonKayitlar = [];
 
 $w.onReady(function () {
     // Repeater'in her satiri hazir oldugunda calisir.
@@ -50,6 +62,17 @@ $w.onReady(function () {
         $w('#btnYenile').onClick(() => leadleriGetir());
     } catch (e) {
         console.log('#btnYenile sayfada yok, atlandi.');
+    }
+
+    // "Siralama" butonu: en yeni ustte <-> en eski ustte
+    try {
+        $w('#btnSirala').onClick(() => {
+            yeniUstte = !yeniUstte;
+            $w('#btnSirala').label = yeniUstte ? 'Sıralama: Yeni → Eski' : 'Sıralama: Eski → Yeni';
+            repeaterDoldur();
+        });
+    } catch (e) {
+        console.log('#btnSirala sayfada yok, atlandi.');
     }
 
     leadleriGetir();
@@ -76,33 +99,41 @@ async function leadleriGetir() {
             throw new Error(veri.hata || 'Bilinmeyen sunucu hatası');
         }
 
-        const kayitlar = veri.data || [];
-
-        if (kayitlar.length === 0) {
-            $w('#leadRepeater').data = [];
-            durumYaz('Henüz kayıtlı bir talep bulunmuyor.');
-            return;
-        }
-
-        // KRITIK: Wix Repeater her nesnede STRING tipinde bir _id bekler.
-        // Backend "id" (sayi) donduruyor; donusumu burada yapiyoruz ki
-        // backend Wix'e ozel bir alan tasimak zorunda kalmasin.
-        $w('#leadRepeater').data = kayitlar.map((k) => ({
-            _id:           String(k.id),
-            isim:          k.isim,
-            telefon:       k.telefon,
-            projeTipi:     k.proje_tipi,
-            mesajKisa:     kisalt(k.mesaj, 90),
-            tarihGosterim: tarihBicimle(k.tarih)
-        }));
-
-        durumYaz(kayitlar.length + ' kayıt listeleniyor.');
+        sonKayitlar = veri.data || [];
+        repeaterDoldur();
 
     } catch (hata) {
         console.error('Lead listeleme hatasi:', hata);
         $w('#leadRepeater').data = [];
         durumYaz('Kayıtlar alınamadı. Sunucuya ulaşılamıyor olabilir, lütfen tekrar deneyin.');
     }
+}
+
+
+// Son cekilen kayitlari secili yonde Repeater'a basar
+function repeaterDoldur() {
+    if (sonKayitlar.length === 0) {
+        $w('#leadRepeater').data = [];
+        durumYaz('Henüz kayıtlı bir talep bulunmuyor.');
+        return;
+    }
+
+    // Backend en yeniden eskiye gonderir; "eski ustte" secildiyse cevir
+    const sira = yeniUstte ? sonKayitlar : sonKayitlar.slice().reverse();
+
+    // KRITIK: Wix Repeater her nesnede STRING tipinde bir _id bekler.
+    // Backend "id" (sayi) donduruyor; donusumu burada yapiyoruz ki
+    // backend Wix'e ozel bir alan tasimak zorunda kalmasin.
+    $w('#leadRepeater').data = sira.map((k) => ({
+        _id:           String(k.id),
+        isim:          k.isim,
+        telefon:       k.telefon,
+        projeTipi:     k.proje_tipi,
+        mesajKisa:     kisalt(k.mesaj, 90),
+        tarihGosterim: tarihBicimle(k.tarih)
+    }));
+
+    durumYaz(sonKayitlar.length + ' kayıt listeleniyor.');
 }
 
 
