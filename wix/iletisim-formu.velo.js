@@ -71,7 +71,7 @@ async function talepGonder() {
     // Backend zaten 400 donduruyor; burada da kontrol ediyoruz ki ziyaretci
     // sunucuya gidip gelmeyi beklemeden aninda uyari gorsun.
     if (!ad || !telefon) {
-        durumYaz('Lütfen isim ve telefon alanlarını doldurun.', false);
+        formDurumYaz('Lütfen isim ve telefon alanlarını doldurun.', false);
         return;
     }
 
@@ -85,7 +85,7 @@ async function talepGonder() {
 
     $w('#btnKaydet').disable();
     $w('#btnKaydet').label = 'Gönderiliyor...';
-    durumYaz('', true);
+    formDurumYaz('', true);
 
     try {
         const cevap = await fetch(API_LEADS, {
@@ -104,19 +104,19 @@ async function talepGonder() {
         const veri = await cevap.json();
 
         if (veri.basari) {
-            durumYaz('Talebiniz alındı. En kısa sürede size dönüş yapacağız.', true);
+            formDurumYaz('Talebiniz alındı. En kısa sürede size dönüş yapacağız.', true);
             $w('#btnKaydet').label = 'Gönderildi ✓';
             temizle('#girdiAd'); temizle('#girdiSoyad'); temizle('#girdiEposta');
             temizle('#girdiTelefon'); temizle('#girdiNot');
         } else {
             // Backend'in kibar hata metnini goster (yoksa genel mesaj)
-            durumYaz(veri.hata || 'Talebiniz kaydedilemedi. Lütfen tekrar deneyin.', false);
+            formDurumYaz(veri.hata || 'Talebiniz kaydedilemedi. Lütfen tekrar deneyin.', false);
             $w('#btnKaydet').label = 'Gönder';
         }
 
     } catch (hata) {
         console.error('Lead kayit hatasi:', hata);
-        durumYaz('Sunucuya ulaşılamadı. Lütfen biraz sonra tekrar deneyin.', false);
+        formDurumYaz('Sunucuya ulaşılamadı. Lütfen biraz sonra tekrar deneyin.', false);
         $w('#btnKaydet').label = 'Gönder';
     } finally {
         $w('#btnKaydet').enable();
@@ -146,7 +146,7 @@ function temizle(id) {
 
 // #textFormDurum sayfada yoksa sessizce gecer; mesaj her halukarda
 // konsola yazilir ki F12 ile teshis yapilabilsin.
-function durumYaz(mesaj, basarili) {
+function formDurumYaz(mesaj, basarili) {
     if (mesaj) {
         console.log('[Iletisim formu]', basarili ? 'OK' : 'HATA', mesaj);
     }
