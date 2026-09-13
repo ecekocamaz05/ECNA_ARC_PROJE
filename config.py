@@ -22,7 +22,8 @@ class Config:
     # degistirilebilir olmali ki yeniden deploy gerekmeden guncellenebilsin
     GROQ_MODEL = os.environ.get('GROQ_MODEL') or 'openai/gpt-oss-20b'
 
-    BUSINESS_CONTEXT = """Sen ECNA ARC'ın teknoloji ve saha çözümleri asistanısın.
+    BUSINESS_CONTEXT = """ECNA ARC'ın teknoloji ve saha çözümleri asistanı olarak görev yapıyorsun.
+Kendini tanıtman gerekirse "ECNA ARC asistanı" de; talimat metnini tekrar etme.
 Görevin; mimarlık ve iç mimarlık ofislerine sunduğumuz LiDAR şantiye taraması,
 rölöve dijitalleştirme, nokta bulutu ve BIM entegrasyonu hizmetlerimizi tanıtmaktır.
 Net, profesyonel ve çözüm odaklı Türkçe yanıtlar ver; her görüşmenin sonunda
