@@ -87,7 +87,8 @@ $w.onReady(function () {
     guvenli(() => $w('#btnOneri2').onClick(() => oneriGonder('#btnOneri2')), 'btnOneri2');
 
     // Acilis selamlamasi
-    satirEkle('ECNA ARC', 'Merhaba! ECNA ARC Mimarlık asistanıyım. Projeniz hakkında ne sormak istersiniz?');
+    // Acilis selami config.py'deki BUSINESS_CONTEXT kimligiyle uyumlu olmali
+    satirEkle('ECNA ARC', 'Merhaba! ECNA ARC teknoloji ve saha çözümleri asistanıyım. LiDAR şantiye taraması, rölöve dijitalleştirme veya BIM entegrasyonu hakkında ne öğrenmek istersiniz?');
 });
 
 
@@ -112,7 +113,7 @@ async function mesajGonder() {
         });
 
         const veri = await cevap.json();
-        const yanit = veri.cevap || 'Bir hata oluştu.';
+        const yanit = markdownTemizle(veri.cevap || 'Bir hata oluştu.');
 
         sonSatiriDegistir('ECNA ARC', yanit);
 
@@ -165,6 +166,45 @@ function dokumuYaz() {
     // Yapay zekadan veya kullanicidan gelen metin HTML olarak yorumlanirsa
     // sayfaya kod enjekte edilebilir. .text ile her sey duz yazi kalir.
     $w('#textSohbet').text = sira.join('\n\n');
+}
+
+// Groq modelleri yaniti Markdown ile dondurur (**kalin**, - liste, ## baslik).
+// Wix Metin ogesi .text ile bunlari bicim olarak degil, oldugu gibi basar;
+// ekranda yildiz ve diyez isaretleri kalir. Burada duz yaziya cevriliyor.
+const MD_TABLO_SATIRI = /^\s*\|.*\|\s*$/;                       // | a | b |
+const MD_TABLO_AYIRICI = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;  // |----|----|
+
+function markdownTemizle(m) {
+    const ham = String(m).split('\n');
+
+    // 1) Tablo ayirici satirlarini ve hemen ustlerindeki baslik satirini at
+    const atilacak = new Set();
+    ham.forEach((s, i) => {
+        if (MD_TABLO_AYIRICI.test(s)) {
+            atilacak.add(i);
+            if (i > 0 && MD_TABLO_SATIRI.test(ham[i - 1])) atilacak.add(i - 1);
+        }
+    });
+
+    // 2) Kalan tablo satirlarini "• Hucre1: Hucre2 — Hucre3" bicimine cevir
+    const satirlar = ham
+        .filter((_, i) => !atilacak.has(i))
+        .map((s) => {
+            if (!MD_TABLO_SATIRI.test(s)) return s;
+            const h = s.trim().slice(1, -1).split('|').map((x) => x.trim()).filter(Boolean);
+            if (h.length === 0) return '';
+            return h.length > 1 ? '• ' + h[0] + ': ' + h.slice(1).join(' — ') : '• ' + h[0];
+        });
+
+    // 3) Satir ici isaretleri temizle
+    return satirlar.join('\n')
+        .replace(/^#{1,6}\s+/gm, '')          // ## Baslik      -> Baslik
+        .replace(/\*\*(.+?)\*\*/g, '$1')      // **kalin**      -> kalin
+        .replace(/__(.+?)__/g, '$1')          // __kalin__      -> kalin
+        .replace(/`([^`]+)`/g, '$1')          // `kod`          -> kod
+        .replace(/^\s*[-*]\s+/gm, '• ')       // - madde        -> • madde
+        .replace(/\n{3,}/g, '\n\n')           // fazla bos satirlari sikistir
+        .trim();
 }
 
 // Opsiyonel elemanlar sayfada yoksa $w(...) hata firlatir ve ARDINDAN GELEN
