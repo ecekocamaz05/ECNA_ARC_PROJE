@@ -94,11 +94,20 @@ $w.onReady(function () {
         });
     }, 'girdiMesaj onKeyPress');
 
-    // --- Kart ac/kapa (opsiyonel) ---
-    // Not: #kutuSohbet'i editorde "Yuklemede gizli" isaretlerseniz kart
-    // kapali baslar ve "CHAT'e sor" butonuyla acilir.
-    guvenli(() => $w('#btnAc').onClick(() => $w('#kutuSohbet').show()), 'btnAc');
-    guvenli(() => $w('#btnKapat').onClick(() => $w('#kutuSohbet').hide()), 'btnKapat');
+    // --- Kart ac/kapa ---
+    // #btnAc her tiklamada kutuyu ACAR / KAPATIR (toggle). Kutu gizliyse
+    // gosterir, gorunuyorsa gizler. #kutuSohbet'i editorde "Yuklemede gizli"
+    // isaretlerseniz kart kapali baslar ve ilk tiklama acar.
+    guvenli(() => $w('#btnAc').onClick(() => {
+        const kutu = $w('#kutuSohbet');
+        if (kutu.hidden) {
+            kutu.show('fade');
+        } else {
+            kutu.hide('fade');
+        }
+    }), 'btnAc');
+    // Kartin icindeki X de kapatir (varsa)
+    guvenli(() => $w('#btnKapat').onClick(() => $w('#kutuSohbet').hide('fade')), 'btnKapat');
 
     // --- Hazir soru rozetleri (opsiyonel) ---
     // Rozetin uzerindeki yaziyi okuyup dogrudan soru olarak gonderir;
