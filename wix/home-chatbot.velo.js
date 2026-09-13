@@ -3,7 +3,7 @@
 
    Wix'in kendi tasarim ogeleriyle (Kutu, Metin, Giris, Dugme) yapilmis
    bir sohbet kartini kendi Flask/Groq backend'imize baglar.
-   HTML gomme (iframe) KULLANMAZ; yonergenin istedigi wix-fetch yolu budur.
+   HTML gomme (iframe) KULLANMAZ; yonergenin istedigi Velo + fetch yolu budur.
 
    NEREYE YAPISTIRILIR?
    Wix Studio > Dev Mode (Velo) ACIK > Ana sayfa (Home) > alttaki kod
@@ -41,7 +41,9 @@
    Bu yuzden "girdiIleti" degil "girdiMesaj" gibi adlar secildi.
    ===================================================================== */
 
-import { fetch } from 'wix-fetch';
+// NOT: 'import { fetch } from "wix-fetch"' satiri BILEREK YOK. Wix bu modulu
+// kullanimdan kaldirdi (editor 'deprecated' uyarisi verir); tarayicinin standart
+// fetch() fonksiyonu Velo sayfa kodunda dogrudan kullanilabilir.
 
 // Render sunucusunun MUTLAK adresi. Goreli adres ("/api/sohbet") KULLANMAYIN;
 // o durumda istek Render'a degil Wix alan adina gider ve 404 doner.

@@ -8,12 +8,9 @@
    Wix Studio > Dev Mode (Velo) ACIK > formun bulundugu sayfa > alttaki
    kod paneline bu dosyanin TAMAMI.
 
-   !!! SOHBET KARTIYLA AYNI SAYFADAYSA:
-   Sayfada zaten home-chatbot.velo.js varsa, bu dosyanin EN USTTEKI
-   "import { fetch } from 'wix-fetch';" satirini yapistirmayin (o satir
-   zaten var). Iki kez yapistirirsaniz Wix su hatayi verir:
-       "Identifier 'fetch' has already been declared"
-   Bu hatayi gorurseniz sebep budur; ikinci import satirini silin.
+   SOHBET KARTIYLA AYNI SAYFADAYSA:
+   Bu dosyayi sohbet kodunun ALTINA ekleyin. Import satiri olmadigi icin
+   cakisma olmaz; fonksiyon adlari da sohbet dosyasindan farkli secildi.
 
    ---------------------------------------------------------------------
    SAYFADA BULUNMASI GEREKEN ELEMAN ID'LERI
@@ -50,7 +47,9 @@
    Boylece hicbir bilgi kaybolmaz, yonetim panelinde hepsi gorunur.
    ===================================================================== */
 
-import { fetch } from 'wix-fetch';
+// NOT: 'import { fetch } from "wix-fetch"' satiri BILEREK YOK. Wix bu modulu
+// kullanimdan kaldirdi (editor 'deprecated' uyarisi verir); tarayicinin standart
+// fetch() fonksiyonu Velo sayfa kodunda dogrudan kullanilabilir.
 
 // Render sunucusunun MUTLAK adresi. Goreli adres ("/api/leads") KULLANMAYIN.
 const API_LEADS = 'https://ecna-arc-smartlead.onrender.com/api/leads';

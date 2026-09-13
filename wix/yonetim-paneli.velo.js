@@ -38,7 +38,9 @@
    neredeyse ayni gorunur ama kod elemani bulamaz ve teshisi cok zordur.
    ===================================================================== */
 
-import { fetch } from 'wix-fetch';
+// NOT: 'import { fetch } from "wix-fetch"' satiri BILEREK YOK. Wix bu modulu
+// kullanimdan kaldirdi (editor 'deprecated' uyarisi verir); tarayicinin standart
+// fetch() fonksiyonu Velo sayfa kodunda dogrudan kullanilabilir.
 
 // Render sunucusunun MUTLAK adresi. Goreli adres ("/api/leads") KULLANMAYIN;
 // o durumda istek Render'a degil Wix alan adina gider ve 404 doner.
