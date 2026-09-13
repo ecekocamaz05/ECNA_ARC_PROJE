@@ -24,6 +24,11 @@
      #btnOneri1     -> Dugme      (hazir soru rozeti 1)
      #btnOneri2     -> Dugme      (hazir soru rozeti 2)
 
+   OPSIYONEL - EKIP BOLUMU ANIMASYONU (sohbetle ilgisi yok, ayni sayfada):
+     #revealButton  -> Dugme      (tiklaninca ekip kartlari acilir)
+     #overlayBox    -> Kutu       (ekibi orten siyah katman)
+     #teamSection   -> Bolum/Kutu (ekip kartlari)
+
    ID'ler birebir ayni olmali. Bir harf farki baglantiyi koparir.
 
    NOT - TALEP (LEAD) FORMU BU DOSYADA YOKTUR.
@@ -40,6 +45,10 @@
    neredeyse ayni gorunur ama kod elemani bulamaz ve teshisi cok zordur.
    Bu yuzden "girdiIleti" degil "girdiMesaj" gibi adlar secildi.
    ===================================================================== */
+
+// TUM import SATIRLARI DOSYANIN EN USTUNDE OLMALI. Ortaya yapistirilan bir
+// import, Wix'in dosyayi derlemesini engeller ve sayfadaki hicbir kod calismaz.
+import { timeline } from 'wix-animations';
 
 // NOT: 'import { fetch } from "wix-fetch"' satiri BILEREK YOK. Wix bu modulu
 // kullanimdan kaldirdi (editor 'deprecated' uyarisi verir); tarayicinin standart
@@ -88,7 +97,9 @@ $w.onReady(function () {
     guvenli(() => $w('#btnOneri1').onClick(() => oneriGonder('#btnOneri1')), 'btnOneri1');
     guvenli(() => $w('#btnOneri2').onClick(() => oneriGonder('#btnOneri2')), 'btnOneri2');
 
-    // Acilis selamlamasi
+    // --- Ekip bolumu animasyonu (opsiyonel, sohbetten bagimsiz) ---
+    ekipAnimasyonuKur();
+
     // Acilis selami config.py'deki BUSINESS_CONTEXT kimligiyle uyumlu olmali
     satirEkle('ECNA ARC', 'Merhaba! ECNA ARC teknoloji ve saha çözümleri asistanıyım. LiDAR şantiye taraması, rölöve dijitalleştirme veya BIM entegrasyonu hakkında ne öğrenmek istersiniz?');
 });
@@ -218,4 +229,36 @@ function guvenli(islev, ad) {
     } catch (e) {
         console.log('Atlandi (sayfada yok): ' + ad);
     }
+}
+
+
+/* ==================== EKIP BOLUMU ANIMASYONU (opsiyonel) ==================== */
+
+// #revealButton'a tiklaninca buton kucularak kaybolur, siyah ortu (#overlayBox)
+// silinir ve ekip kartlari (#teamSection) belirir. Uc elemandan biri sayfada
+// yoksa guvenli() sayesinde sadece bu ozellik atlanir, sohbet etkilenmez.
+function ekipAnimasyonuKur() {
+    guvenli(() => {
+        const ekip  = $w('#teamSection');
+        const ortu  = $w('#overlayBox');
+        const dugme = $w('#revealButton');
+
+        // Baslangic durumu: ekip gorunmez. Velo elemanlarinda ".opacity = 0"
+        // diye bir ozellik YOK; sifir sureli bir timeline ile ayarlanir.
+        timeline().add(ekip, { opacity: 0, duration: 0 }).play();
+
+        dugme.onClick(() => {
+            timeline()
+                // 1. Buton kuculup kaybolur
+                .add(dugme, { opacity: 0, scale: 0.8, duration: 400, easing: 'easeOutQuad' })
+                // 2. Siyah ortu buyuyerek silinir (bir onceki bitmeden 200 ms once baslar)
+                .add(ortu,  { opacity: 0, scale: 1.05, duration: 800, easing: 'easeInOutCubic' }, '-=200')
+                // 3. Ekip kartlari belirir
+                .add(ekip,  { opacity: 1, duration: 600, easing: 'easeInQuad' }, '-=400')
+                // play() Promise DONDURMEZ (.then calismaz); bitis icin onComplete kullanilir.
+                // Ortu seffaf olsa da tiklamalari yakalar; bu yuzden bitince tamamen gizlenir.
+                .onComplete(() => ortu.hide())
+                .play();
+        });
+    }, 'ekip animasyonu (#teamSection / #overlayBox / #revealButton)');
 }
