@@ -76,6 +76,10 @@ const gecmis = [];
 // Ekranda gosterilen dokum satirlari
 const satirlar = [];
 
+// Sohbet kutusunun acik/kapali durumu ve son ac-kapa zamani (cift tetikleme korumasi)
+let sohbetAcik = false;
+let sonAcKapa = 0;
+
 
 $w.onReady(function () {
 
@@ -94,20 +98,36 @@ $w.onReady(function () {
         });
     }, 'girdiMesaj onKeyPress');
 
-    // --- Kart ac/kapa ---
-    // #btnAc her tiklamada kutuyu ACAR / KAPATIR (toggle). Kutu gizliyse
-    // gosterir, gorunuyorsa gizler. #kutuSohbet'i editorde "Yuklemede gizli"
-    // isaretlerseniz kart kapali baslar ve ilk tiklama acar.
-    guvenli(() => $w('#btnAc').onClick(() => {
+    // --- Kart ac/kapa (cift tetiklemeye dayanikli) ---
+    // Bu sayfada butona basinca kart "belirip kayboluyordu": ayni tiklama iki
+    // kez isleniyordu (Studio etkilesimi veya ikinci bir baglanti). Cozum:
+    //  - durum kutu.hidden'a degil kendi degiskenimize (sohbetAcik) gore tutulur
+    //  - 500 ms icinde gelen ikinci tetikleme yutulur
+    //  - kart yuklenince kesin kapali baslar (editordeki isarete bagimli degil)
+    guvenli(() => {
         const kutu = $w('#kutuSohbet');
-        if (kutu.hidden) {
-            kutu.show('fade');
-        } else {
-            kutu.hide('fade');
-        }
-    }), 'btnAc');
+        kutu.hide();
+        sohbetAcik = false;
+
+        $w('#btnAc').onClick(() => {
+            const simdi = Date.now();
+            if (simdi - sonAcKapa < 500) return;   // ayni tiklamanin tekrari
+            sonAcKapa = simdi;
+
+            if (sohbetAcik) {
+                kutu.hide('fade');
+                sohbetAcik = false;
+            } else {
+                kutu.show('fade');
+                sohbetAcik = true;
+            }
+        });
+    }, 'btnAc');
     // Kartin icindeki X de kapatir (varsa)
-    guvenli(() => $w('#btnKapat').onClick(() => $w('#kutuSohbet').hide('fade')), 'btnKapat');
+    guvenli(() => $w('#btnKapat').onClick(() => {
+        $w('#kutuSohbet').hide('fade');
+        sohbetAcik = false;
+    }), 'btnKapat');
 
     // --- Hazir soru rozetleri (opsiyonel) ---
     // Rozetin uzerindeki yaziyi okuyup dogrudan soru olarak gonderir;
